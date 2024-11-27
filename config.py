@@ -24,4 +24,4 @@ def load_settings():
         exit(str(e))
 
 
-settings = load_settings
+settings = load_settings()
