@@ -1,4 +1,5 @@
 import nltk
+from loguru import logger
 
 nltk.download('punkt')
 
@@ -9,6 +10,7 @@ def chunkify(text, max_tokens=3000):
     chunks = []
     current_chunk = []
     current_chunk_size = 0
+    logger.info("Starting to chunkify")
 
     for word in words:
         current_chunk.append(word)
