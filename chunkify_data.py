@@ -23,4 +23,5 @@ def chunkify(text, max_tokens=3000):
     if current_chunk:
         chunks.append(" ".join(current_chunk))
 
+    logger.info(f"Chunkification completed, number of chunks: {len(chunks)}")
     return chunks
