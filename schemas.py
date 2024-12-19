@@ -10,6 +10,12 @@ class TableSchema(BaseModel):
     columns: List[str]
     rows: List[List[str]]
 
+class TablesSchema(BaseModel):
+    tables: List[TableSchema]
+
+class ExtractedTextSchema(BaseModel):
+    text: str
+
 class PreProcessingResponseSchema(BaseModel):
     text: str
     tables: List[TableSchema]

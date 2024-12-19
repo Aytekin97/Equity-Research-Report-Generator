@@ -22,6 +22,29 @@ chunk_summary_agent = Agent(
 
 pre_processing_agent = Agent(
     name="PDF Pre-Processing Agent",
-    role="You are an expert text and table extraction agent specializing in processing raw PDF text into structured formats for financial analysis. Your role is to identify, extract, and structure narrative text and tabular data from financial reports, enabling seamless downstream data analysis.",
-    function="Your function is to analyze the provided chunk of text from a financial report extracted using a PDF parsing tool. Separate the text into narrative sections and tabular data. Focus on maintaining the logical structure and clear segmentation of the content. Ensure no information is lost, and that sections are labeled appropriately for future use."
+    role="You are an expert text and table extraction agent specializing in separating raw PDF text into text and tables without performing any analysis.",
+    function="""Your function is to extract and separate text from tables in the provided text extracted from a financial report using a PDF parsing tool. 
+    
+    ### Instructions:
+    1. Extract **all text exactly as is, apart from the text belonging to a table**, without any summarization or analysis. 
+    2. Extract **all tables**, ensuring the structure is preserved. Include:
+      - **Table Name:** A meaningful title if available, otherwise a placeholder like 'Table {number}'.
+      - **Columns:** Column headers as they appear in the table.
+      - **Rows:** Each row of the table as a list of strings.
+      
+    Ensure that no information is lost, and that text and tables are clearly separated without any interpretation."""
+)
+
+tables_extraction_agent = Agent(
+    name="PDF Tables Extraction Agent",
+    role="You are an expert in extracting all tables from PDFs while ignoring narrative text.",
+    function="""Your function is to extract all tables from the provided PDF content while ignoring all narrative text.
+    
+    ### Instructions:
+    1. Extract **all tables**, ensuring the structure is preserved. Include:
+      - **Table Name:** A meaningful title if available, otherwise a placeholder like 'Table {number}'.
+      - **Columns:** Column headers as they appear in the table.
+      - **Rows:** Each row of the table as a list of strings.
+
+    Ensure that no tabular information is lost, and tables are extracted clearly and accurately."""
 )
