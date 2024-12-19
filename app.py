@@ -2,16 +2,18 @@ from loguru import logger
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
-from chunkify_data import chunkify
 
-from agents import chunk_summary_agent, pre_processing_agent, tables_extraction_agent
+from agents import chunk_summary_agent, tables_extraction_agent, text_extraction_agent
 from openai_client import OpenAiClient
-from schemas import ChunkSummaryResponseSchema, PreProcessingResponseSchema, TablesSchema
+from schemas import ChunkSummaryResponseSchema, PreProcessingResponseSchema, TablesSchema, ExtractedTextSchema
 import json
 from document_pre_process import pdf_reader
 
-file_name = "pre_processed_response.json"
-path = os.path.join(os.path.dirname(__file__), file_name)
+extracted_text_file = "extracted_text.json"
+extracted_text_path = os.path.join(os.path.dirname(__file__), extracted_text_file)
+
+extracted_tables_file = "extracted_tables.json"
+extracted_tables_path = os.path.join(os.path.dirname(__file__), extracted_text_file)
 
 app = Flask(__name__)
 CORS(app)
@@ -23,23 +25,39 @@ def main():
     client = OpenAiClient()
 
     extracted_pdf = pdf_reader()
-    #print(text)
+
+    # Extract tables
+    logger.info("Extracting tables")
     try:
         logger.info("Prompting ChatGPT")
         prompt = tables_extraction_agent.prompt(extracted_pdf)
-        pre_prossessed_pdf = client.query_gpt(prompt, TablesSchema)
+        extracted_tables = client.query_gpt(prompt, TablesSchema)
         logger.info("Response received from ChatGPT")
             
     except Exception as e:
         logger.error(f"An error occured while querying ChatGPT: {e}")
 
-    with open(path, 'w') as file:
-        json.dump(pre_prossessed_pdf.dict(), file, indent=4)
+    with open(extracted_tables_path, 'w') as file:
+        json.dump(extracted_tables.dict(), file, indent=4)
 
-    logger.info(f"Response dumped into: {file_name}")
-    exit(0)
+    logger.info(f"Response dumped into: {extracted_tables_file}")
 
-    #chunks = chunkify(text)
+    # Extract text
+    logger.info("Extracting text")
+    try:
+        logger.info("Prompting ChatGPT")
+        prompt = text_extraction_agent.prompt(extracted_pdf)
+        extracted_text = client.query_gpt(prompt, ExtractedTextSchema)
+        logger.info("Response received from ChatGPT")
+            
+    except Exception as e:
+        logger.error(f"An error occured while querying ChatGPT: {e}")
+
+    with open(extracted_text_path, 'w') as file:
+        json.dump(extracted_text.dict(), file, indent=4)
+
+    logger.info(f"Response dumped into: {extracted_text_file}")
+
 
     """ with open(path, 'w') as file:
         json.dumps(chunks, file, indent=4) """

@@ -20,21 +20,6 @@ chunk_summary_agent = Agent(
     function="Your function is to analyze the provided chunk of text from a financial report and deliver a concise and contextually relevant one-paragraph summary. The summary should focus on the company's financial performance, market trends, growth opportunities, risks, and their potential impact on the stock price. Ensure the summary aligns with the overarching goal of supporting equity analysis, avoiding any unrelated or superficial details. The summary should be maximum {summary_token_target} tokens"
 )
 
-pre_processing_agent = Agent(
-    name="PDF Pre-Processing Agent",
-    role="You are an expert text and table extraction agent specializing in separating raw PDF text into text and tables without performing any analysis.",
-    function="""Your function is to extract and separate text from tables in the provided text extracted from a financial report using a PDF parsing tool. 
-    
-    ### Instructions:
-    1. Extract **all text exactly as is, apart from the text belonging to a table**, without any summarization or analysis. 
-    2. Extract **all tables**, ensuring the structure is preserved. Include:
-      - **Table Name:** A meaningful title if available, otherwise a placeholder like 'Table {number}'.
-      - **Columns:** Column headers as they appear in the table.
-      - **Rows:** Each row of the table as a list of strings.
-      
-    Ensure that no information is lost, and that text and tables are clearly separated without any interpretation."""
-)
-
 tables_extraction_agent = Agent(
     name="PDF Tables Extraction Agent",
     role="You are an expert in extracting all tables from PDFs while ignoring narrative text.",
@@ -47,4 +32,15 @@ tables_extraction_agent = Agent(
       - **Rows:** Each row of the table as a list of strings.
 
     Ensure that no tabular information is lost, and tables are extracted clearly and accurately."""
+)
+
+text_extraction_agent = Agent(
+    name="Text Extraction Agent",
+    role="You are an expert text extraction agent specializing in capturing all non-tabular text from PDFs without performing any analysis or modifications.",
+    function="""Your function is to extract all text that does not belong to a table from the provided raw PDF content. 
+
+    ### Instructions:
+    - Extract **all non-tabular text exactly as it appears** in the input, preserving formatting and structure.
+    - Do not include any tabular data in this extraction.
+    - Do not analyze, interpret, or summarize the text."""
 )
