@@ -28,7 +28,7 @@ def main():
 
     chunks = chunkify(text)
 
-    with open(path, 'r') as file:
+    with open(path, 'w') as file:
         json.dumps(chunks, file, indent=4)
 
     exit(0)

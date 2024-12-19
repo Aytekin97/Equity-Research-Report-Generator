@@ -1,3 +1,5 @@
 .env
 summarized_chunks.json
 TSLA-Q1-2024-Update.pdf
+pdf_tables.json
+pdf_text.json
