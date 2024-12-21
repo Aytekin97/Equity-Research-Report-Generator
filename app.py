@@ -1,19 +1,29 @@
 from loguru import logger
-import os
 from flask import Flask, jsonify
 from flask_cors import CORS
-
 from agents import chunk_summary_agent, tables_extraction_agent, text_extraction_agent
 from openai_client import OpenAiClient
 from schemas import ChunkSummaryResponseSchema, PreProcessingResponseSchema, TablesSchema, ExtractedTextSchema
+from vector_manager import VectorManager
+from pdf_manager import PdfManager
+
 import json
-from document_pre_process import pdf_reader
+import requests
+import os
 
-extracted_text_file = "extracted_text.json"
-extracted_text_path = os.path.join(os.path.dirname(__file__), extracted_text_file)
 
-extracted_tables_file = "extracted_tables.json"
-extracted_tables_path = os.path.join(os.path.dirname(__file__), extracted_text_file)
+extracted_text_path = os.path.join(os.path.dirname(__file__), "documents\extracted_text.json")
+extracted_tables_path = os.path.join(os.path.dirname(__file__), "documents\extracted_tables.json")
+
+text_embeddings_file_name = "text_embeddings.json"
+text_embeddings_path = os.path.join(os.path.dirname(__file__), f"documents\{text_embeddings_file_name}")
+table_embeddings_file_name = "table_embeddings.json"
+table_embeddings_path = os.path.join(os.path.dirname(__file__), f"documents\{table_embeddings_file_name}")
+
+
+embedings_file_name = "article_embedings.json"
+embedings_path = f"documents\{embedings_file_name}"
+article_embedings_path = os.path.join(os.path.dirname(__file__), embedings_path)
 
 app = Flask(__name__)
 CORS(app)
@@ -23,40 +33,46 @@ CORS(app)
 def main():
 
     client = OpenAiClient()
+    vector_manager = VectorManager()
+    pdf_manager = PdfManager()
 
-    extracted_pdf = pdf_reader()
+    extracted_pdf = pdf_manager.pdf_reader()
 
-    # Extract tables
-    logger.info("Extracting tables")
-    try:
-        logger.info("Prompting ChatGPT")
-        prompt = tables_extraction_agent.prompt(extracted_pdf)
-        extracted_tables = client.query_gpt(prompt, TablesSchema)
-        logger.info("Response received from ChatGPT")
-            
+    # Extract tables and text
+    extracted_tables = pdf_manager.extract(client, extracted_pdf, TablesSchema, tables_extraction_agent)
+    extracted_text = pdf_manager.extract(client, extracted_pdf, ExtractedTextSchema, text_extraction_agent)
+
+    # Format tables for embedding generation
+
+    formatted_tables = pdf_manager.format_table_for_embedding(extracted_tables)
+
+    # Send request to get news articles
+    try:       
+        news = requests.get("https://fetch-news-to-display-production.up.railway.app/api/news/Tesla").json()
+        article_summaries = [item['summary'] for item in news if 'summary' in item]
     except Exception as e:
-        logger.error(f"An error occured while querying ChatGPT: {e}")
+        logger.error(f"An error occured while sending a request to the DB to receive news articles: {e}")
+
+    # Create embeddings
+    text_embeddings = vector_manager.vectorize(client, [extracted_text.text])
+    table_embeddings = vector_manager.vectorize(client, formatted_tables)
+    article_embeddings = vector_manager.vectorize(client, article_summaries)
+
+    # Dump to JSON file
+    with open(article_embedings_path, 'w') as file:
+        json.dump(article_embeddings, file, indent=4)
 
     with open(extracted_tables_path, 'w') as file:
         json.dump(extracted_tables.dict(), file, indent=4)
 
-    logger.info(f"Response dumped into: {extracted_tables_file}")
-
-    # Extract text
-    logger.info("Extracting text")
-    try:
-        logger.info("Prompting ChatGPT")
-        prompt = text_extraction_agent.prompt(extracted_pdf)
-        extracted_text = client.query_gpt(prompt, ExtractedTextSchema)
-        logger.info("Response received from ChatGPT")
-            
-    except Exception as e:
-        logger.error(f"An error occured while querying ChatGPT: {e}")
-
     with open(extracted_text_path, 'w') as file:
         json.dump(extracted_text.dict(), file, indent=4)
 
-    logger.info(f"Response dumped into: {extracted_text_file}")
+    with open(table_embeddings_path, 'w') as file:
+        json.dump(table_embeddings, file, indent=4)
+
+    with open(text_embeddings_path, 'w') as file:
+        json.dump(text_embeddings, file, indent=4)
 
 
     """ with open(path, 'w') as file:

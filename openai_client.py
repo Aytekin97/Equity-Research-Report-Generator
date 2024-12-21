@@ -1,5 +1,4 @@
 from openai import OpenAI
-
 from config import settings
 
 
@@ -13,3 +12,15 @@ class OpenAiClient:
             model=self.model, messages=messages, response_format=response_format
         )
         return completion.choices[0].message.parsed
+    
+    def generate_embeddings(self, text_list):
+        try:
+            response = self.client.embeddings.create(
+                model="text-embedding-3-large", input=text_list
+            )
+            #embeddings = [item['embedding'] for item in response['data']]
+            return response
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return []
+    

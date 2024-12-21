@@ -30,6 +30,7 @@ tables_extraction_agent = Agent(
       - **Table Name:** A meaningful title if available, otherwise a placeholder like 'Table {number}'.
       - **Columns:** Column headers as they appear in the table.
       - **Rows:** Each row of the table as a list of strings.
+    2. **Double check** your work afterwards to ensure you captured all tables
 
     Ensure that no tabular information is lost, and tables are extracted clearly and accurately."""
 )
