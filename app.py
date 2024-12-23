@@ -6,6 +6,7 @@ from openai_client import OpenAiClient
 from schemas import ChunkSummaryResponseSchema, PreProcessingResponseSchema, TablesSchema, ExtractedTextSchema
 from vector_manager import VectorManager
 from pdf_manager import PdfManager
+from chunkify_data import chunkify
 
 import json
 import requests
@@ -42,6 +43,9 @@ def main():
     extracted_tables = pdf_manager.extract(client, extracted_pdf, TablesSchema, tables_extraction_agent)
     extracted_text = pdf_manager.extract(client, extracted_pdf, ExtractedTextSchema, text_extraction_agent)
 
+    # Chunkify the text
+    chunkified_text = chunkify(extracted_text.text)
+
     # Format tables for embedding generation
 
     formatted_tables = pdf_manager.format_table_for_embedding(extracted_tables)
@@ -54,13 +58,20 @@ def main():
         logger.error(f"An error occured while sending a request to the DB to receive news articles: {e}")
 
     # Create embeddings
-    text_embeddings = vector_manager.vectorize(client, [extracted_text.text])
+    text_embeddings = vector_manager.vectorize(client, chunkified_text)
     table_embeddings = vector_manager.vectorize(client, formatted_tables)
     article_embeddings = vector_manager.vectorize(client, article_summaries)
 
+    embeddings = {
+        "text_embeddings": [{"chunk": chunk, "embedding": embedding} for chunk, embedding in zip(chunkified_text, text_embeddings)],
+        "table_embeddings": [{"table": table, "embedding": embedding} for table, embedding in zip(formatted_tables, table_embeddings)],
+        "article_embeddings": [{"article": article, "embedding": embedding} for article, embedding in zip(article_summaries, article_embeddings)],
+    }
+
+
     # Dump to JSON file
     with open(article_embedings_path, 'w') as file:
-        json.dump(article_embeddings, file, indent=4)
+        json.dump(embeddings["article_embeddings"], file, indent=4)
 
     with open(extracted_tables_path, 'w') as file:
         json.dump(extracted_tables.dict(), file, indent=4)
@@ -69,14 +80,10 @@ def main():
         json.dump(extracted_text.dict(), file, indent=4)
 
     with open(table_embeddings_path, 'w') as file:
-        json.dump(table_embeddings, file, indent=4)
+        json.dump(embeddings["table_embeddings"], file, indent=4)
 
     with open(text_embeddings_path, 'w') as file:
-        json.dump(text_embeddings, file, indent=4)
-
-
-    """ with open(path, 'w') as file:
-        json.dumps(chunks, file, indent=4) """
+        json.dump(embeddings["text_embeddings"], file, indent=4)
 
 
     """ summarized_chunks = []
