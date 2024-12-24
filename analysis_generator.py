@@ -10,7 +10,7 @@ from agents import (
 
 class Analyzer:
 
-    def generate_analysis(self, client, vector_manager, embeddings):
+    def generate_analysis(self, client, vector_manager):
         analysis_agents = [
             profitability_agent, leverage_agent, liquidity_agent, efficiency_agent,
             earnings_quality_agent, growth_agent, valuation_agent, dividend_policy_agent,
@@ -27,7 +27,11 @@ class Analyzer:
         for agent in analysis_agents:
 
             try: 
+                # Getting related chunks
+                logger.info("Getting related chunks using vector_manager")
                 query_embeddings = vector_manager.vectorize(agent.query)
+                related_chunks = vector_manager.retrieve_chunks(query_embeddings)
+                logger.success(f"Relative chunks received. Number of chunks: {len(related_chunks)}")
                 # Implement somthing that retrieves 5 chunks from each type of data using the query embeddings
                 
             except Exception as e:
