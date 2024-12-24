@@ -19,3 +19,7 @@ class ExtractedTextSchema(BaseModel):
 class PreProcessingResponseSchema(BaseModel):
     text: str
     tables: List[TableSchema]
+
+class AnalysisResponseSchema(BaseModel):
+    analysis: str
+
