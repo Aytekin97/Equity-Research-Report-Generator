@@ -7,6 +7,7 @@ from schemas import ChunkSummaryResponseSchema, PreProcessingResponseSchema, Tab
 from vector_manager import VectorManager
 from pdf_manager import PdfManager
 from chunkify_data import chunkify
+from analysis_generator import Analyzer
 
 import json
 import requests
@@ -20,6 +21,8 @@ text_embeddings_file_name = "text_embeddings.json"
 text_embeddings_path = os.path.join(os.path.dirname(__file__), f"documents\{text_embeddings_file_name}")
 table_embeddings_file_name = "table_embeddings.json"
 table_embeddings_path = os.path.join(os.path.dirname(__file__), f"documents\{table_embeddings_file_name}")
+final_analysis_file_name = "final_analysis.json"
+final_analysis_path = os.path.join(os.path.dirname(__file__), f"documents\{final_analysis_file_name}")
 
 
 embedings_file_name = "article_embedings.json"
@@ -36,6 +39,7 @@ def main():
     client = OpenAiClient()
     vector_manager = VectorManager()
     pdf_manager = PdfManager()
+    analysis_generator = Analyzer()
 
     extracted_pdf = pdf_manager.pdf_reader()
 
@@ -68,6 +72,12 @@ def main():
         "article_embeddings": [{"article": article, "embedding": embedding} for article, embedding in zip(article_summaries, article_embeddings)],
     }
 
+    vector_manager.embeddings = embeddings
+
+    final_analysis = analysis_generator.generate_analysis(client, vector_manager)
+    logger.success(f"Final analysis was successfuly generated.")
+    logger.info(f"Analysis length: {len(final_analysis)}")
+
 
     # Dump to JSON file
     with open(article_embedings_path, 'w') as file:
@@ -85,18 +95,8 @@ def main():
     with open(text_embeddings_path, 'w') as file:
         json.dump(embeddings["text_embeddings"], file, indent=4)
 
-
-    """ summarized_chunks = []
-    for chunk in chunks:
-        try:
-            chunk_summary_agent.set_max_tokens(500)
-            prompt = chunk_summary_agent.prompt(chunk)
-
-            chunk_summary = client.query_gpt(prompt, ChunkSummaryResponseSchema)
-            summarized_chunks.append(chunk_summary)
-            
-        except Exception as e:
-            logger.error(f"An error occured while getting the chunk summary: {e}") """
+    with open(final_analysis_path, 'w') as file:
+        json.dump(final_analysis, file, indent=4)
 
 
 

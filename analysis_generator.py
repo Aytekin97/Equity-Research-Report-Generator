@@ -22,28 +22,49 @@ class Analyzer:
         ]
 
         analysis = []
-        corpora = []
-
+        
         for agent in analysis_agents:
 
-            try: 
-                # Getting related chunks
-                logger.info("Getting related chunks using vector_manager")
-                query_embeddings = vector_manager.vectorize(agent.query)
+            corpora = []
+            try:
+                # Generate embeddings for the agent query
+                logger.info(f"Generating embeddings for agent: {agent.name}")
+                query_embeddings = vector_manager.vectorize(client, agent.query)
+
+                # Retrieve chunks for all data types
+                logger.info("Retrieving relevant chunks for the query")
                 related_chunks = vector_manager.retrieve_chunks(query_embeddings)
-                logger.success(f"Relative chunks received. Number of chunks: {len(related_chunks)}")
-                # Implement somthing that retrieves 5 chunks from each type of data using the query embeddings
-                
+
+                logger.success(f"Related chunks received. Total: {len(related_chunks)}")
+                # Extract relevant text from chunks based on key availability
+                corpora.extend(
+                    chunk["chunk"] if "chunk" in chunk else
+                    chunk["table"] if "table" in chunk else
+                    chunk["article"] for chunk in related_chunks
+                )
+
             except Exception as e:
-                logger.error(f"An error occured while generating vectors: {e}")
+                logger.error(f"An error occurred while generating vectors or retrieving chunks: {e}")
+
 
             try:
+                # Prompting ChatGPT with corpora
                 logger.info("Prompting ChatGPT")
-                prompt = agent.prompt(corpora)
+                
+                # Convert corpora (list of chunks) to a single string
+                formatted_corpora = "\n\n".join(corpora)  # Separate chunks with double newlines for readability
+
+                # Create the prompt using the agent's method
+                prompt = agent.prompt(formatted_corpora)
+
+                # Query ChatGPT with the constructed prompt
                 response = client.query_gpt(prompt, AnalysisResponseSchema)
                 logger.success("Response received from ChatGPT")
 
-                analysis.append(response)
-                    
+                # Append the response to the analysis
+                analysis.append({"Agent": agent.name, "Analysis": response.analysis})
+
             except Exception as e:
-                logger.error(f"An error occured while querying ChatGPT: {e}")
+                logger.error(f"An error occurred while querying ChatGPT: {e}")
+
+        return analysis
