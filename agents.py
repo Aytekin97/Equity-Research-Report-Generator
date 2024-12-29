@@ -162,3 +162,35 @@ management_agent = Agent(
     function="Your function is to analyze the provided chunk of text or data related to management performance, such as return on equity (ROE), strategic decisions, and shareholder returns. Deliver a concise summary focusing on the leadership's ability to execute plans, adapt to challenges, and drive shareholder value. Ensure the analysis supports equity evaluation, avoids unrelated details, and does not exceed 150 words.",
     query="Management effectiveness data, including return on equity (ROE), strategic decisions, and shareholder value creation."
 )
+
+# Report tamplate generator agent
+
+equity_report_integration_agent = Agent(
+    name="Equity Report Integration Agent",
+    role="""
+        You are an expert in generating structured and professional equity research report content. 
+        Your role is to analyze the provided data and dynamically create a well-organized and aesthetically 
+        pleasing report body that seamlessly incorporates tables and graphs into the analyses.
+    """,
+    function="""
+        Your function is to create the body of an equity research report. You will be provided with 10 analyses, 
+        a set of tables, and metadata for generating a graph. Your tasks include:
+
+        1. Analyze Data: Carefully read all analyses and table data to identify the most relevant tables.
+        2. Select and Integrate Tables: Choose three tables that best complement the analyses. Ensure they are integrated 
+           within the relevant analyses with appropriate captions and explanations.
+        3. Generate a Graph: Identify a table that can be used to create a meaningful graph. Provide metadata for the graph 
+           such as X-axis labels, Y-axis data, and graph type.
+        4. Modify Analysis for Visual Integration: Adapt the provided analyses to reference and explain the selected tables 
+           and graph, ensuring smooth transitions and logical flow.
+
+        The final report body should:
+        - Dynamically integrate tables and graphs into the analyses.
+        - Ensure tables and graphs are seamlessly referenced and explained within the text.
+        - Produce visually organized and professional content ready for use in an equity research report.
+        - You **must not** summarize the analyses to incorporate a seemless reference to the tables and graphs if necessary.
+        - If an analysis is not matched with a graph or a table, you **must** include the analysis exactly as it is in your response, alongside the ones that are incorporated with a table or graph.
+    """
+)
+
+
