@@ -1,13 +1,14 @@
 from loguru import logger
 from flask import Flask, jsonify
 from flask_cors import CORS
-from agents import chunk_summary_agent, tables_extraction_agent, text_extraction_agent
+from agents import chunk_summary_agent, tables_extraction_agent, text_extraction_agent, equity_report_integration_agent
 from openai_client import OpenAiClient
-from schemas import ChunkSummaryResponseSchema, PreProcessingResponseSchema, TablesSchema, ExtractedTextSchema
+from schemas import ChunkSummaryResponseSchema, PreProcessingResponseSchema, TablesSchema, ExtractedTextSchema, ReportResponse
 from vector_manager import VectorManager
 from pdf_manager import PdfManager
 from chunkify_data import chunkify
 from analysis_generator import Analyzer
+from report_generator import ReportGenerator
 
 import json
 import requests
@@ -40,6 +41,7 @@ def main():
     vector_manager = VectorManager()
     pdf_manager = PdfManager()
     analysis_generator = Analyzer()
+    report_generator = ReportGenerator(client, vector_manager)
 
     extracted_pdf = pdf_manager.pdf_reader()
 
@@ -67,10 +69,33 @@ def main():
     article_embeddings = vector_manager.vectorize(client, article_summaries)
 
     embeddings = {
-        "text_embeddings": [{"chunk": chunk, "embedding": embedding} for chunk, embedding in zip(chunkified_text, text_embeddings)],
-        "table_embeddings": [{"table": table, "embedding": embedding} for table, embedding in zip(formatted_tables, table_embeddings)],
-        "article_embeddings": [{"article": article, "embedding": embedding} for article, embedding in zip(article_summaries, article_embeddings)],
-    }
+    "text_embeddings": [
+        {
+            "chunk": chunk,
+            "embedding": embedding,
+            "document_name": "TSLA-Q1-2024-Update.pdf"
+        }
+        for chunk, embedding in zip(chunkified_text, text_embeddings)
+    ],
+    "table_embeddings": [
+        {
+            "table": table,
+            "embedding": embedding,
+            "document_name": table.table_name
+        }
+        for table, embedding, table in zip(formatted_tables, table_embeddings, extracted_tables.tables)
+    ],
+    "article_embeddings": [
+        {
+            "article": article,
+            "embedding": embedding,
+            "document_name": news_article['title'],
+            "date": news_article['published_date']
+        }
+        for article, embedding, news_article in zip(article_summaries, article_embeddings, news)
+    ],
+}
+
 
     vector_manager.embeddings = embeddings
 
@@ -78,6 +103,9 @@ def main():
     logger.success(f"Final analysis was successfuly generated.")
     logger.info(f"Analysis length: {len(final_analysis)}")
 
+    report_reponse = report_generator.generate_report(final_analysis, extracted_tables, equity_report_integration_agent, ReportResponse)
+
+    report_generator.create_pdf_report(report_reponse, analysis_generator)
 
     # Dump to JSON file
     with open(article_embedings_path, 'w') as file:

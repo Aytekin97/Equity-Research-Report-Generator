@@ -10,6 +10,9 @@ from agents import (
 
 class Analyzer:
 
+    def __init__(self, sources=None):
+        self.sources = sources if sources is not None else set()
+
     def generate_analysis(self, client, vector_manager):
         analysis_agents = [
             profitability_agent, leverage_agent, liquidity_agent, efficiency_agent,
@@ -35,13 +38,24 @@ class Analyzer:
                 logger.info("Retrieving relevant chunks for the query")
                 related_chunks = vector_manager.retrieve_chunks(query_embeddings)
 
+
                 logger.success(f"Related chunks received. Total: {len(related_chunks)}")
                 # Extract relevant text from chunks based on key availability
                 corpora.extend(
-                    chunk["chunk"] if "chunk" in chunk else
-                    chunk["table"] if "table" in chunk else
-                    chunk["article"] for chunk in related_chunks
+                    str(chunk["chunk"]) if "chunk" in chunk else
+                    str(chunk["table"]) if "table" in chunk else
+                    str(chunk["article"]) for chunk in related_chunks
                 )
+
+                # Append sources from related_chunks
+                # Append sources from related_chunks
+                for chunk in related_chunks:
+                    document_name = chunk.get("document_name")
+                    date = chunk.get("date")  # Optional
+                    if document_name:
+                        self.sources.add(frozenset({"document_name": document_name, "date": date}.items()))
+
+                logger.info(f"Sources length: {len(self.sources)}")
 
             except Exception as e:
                 logger.error(f"An error occurred while generating vectors or retrieving chunks: {e}")
