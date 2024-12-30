@@ -190,6 +190,11 @@ equity_report_integration_agent = Agent(
         - Produce visually organized and professional content ready for use in an equity research report.
         - You **must not** summarize the analyses to incorporate a seemless reference to the tables and graphs if necessary.
         - If an analysis is not matched with a graph or a table, you **must** include the analysis exactly as it is in your response, alongside the ones that are incorporated with a table or graph.
+
+        Ensure all graph metadata includes:
+        - x_axis labels (list of strings).
+        - y_data (dictionary with series names as keys and lists of values as values).
+        - Graph type (e.g., 'line', 'bar').
     """
 )
 

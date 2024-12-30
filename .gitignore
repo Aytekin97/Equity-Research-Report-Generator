@@ -9,3 +9,5 @@ documents/text_embeddings.json
 tester_dummy.py
 documents/final_analysis.json
 documents/generated_report.json
+report.pdf
+documents/prompt.json

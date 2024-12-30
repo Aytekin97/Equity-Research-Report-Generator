@@ -30,7 +30,7 @@ class TableData(BaseModel):
 
 class GraphMetadata(BaseModel):
     x_axis: List[str]
-    y_data: Dict[str, List[float]]
+    y_data: Optional[Dict[str, List[float]]] = None
     type: str  # e.g., 'line', 'bar', etc.
 
 class ReportSection(BaseModel):
