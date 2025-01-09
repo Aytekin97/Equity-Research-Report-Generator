@@ -1,28 +1,31 @@
 from weasyprint import HTML
 import matplotlib.pyplot as plt
-import pandas as pd
 import os
 import json
 import base64
-from typing import List, Union
-from schemas import TableSchema, TablesSchema, ReportResponse
+from typing import List
+from schemas import ReportResponse
 from loguru import logger
+from datetime import datetime
 
-generated_report_path = os.path.join(os.path.dirname(__file__), "documents\generated_report.json")
+
 class ReportGenerator:
 
-    def __init__(self, client, vector_manager):
+    def __init__(self, client, s3_client, bucket_name):
         self.client = client
-        self.vector_manager = vector_manager
+        self.s3_client = s3_client
+        self.bucket_name = bucket_name
 
 
-    def prepare_prompt_for_agent(self, analysis: List[dict], tables: TablesSchema):
+    def prepare_prompt_for_agent(self, analysis: List[dict], tables: List[tuple]):
         """
         Prepare a prompt string for the agent, processing analyses and tables.
 
         Args:
             analysis (List[dict]): List of analysis dictionaries.
-            tables (TablesSchema): A TablesSchema object containing table data.
+            tables (List[tuple]): A list of tuples representing table data.
+                Each tuple is expected to have the structure:
+                (table_name, table_columns, table_rows)
 
         Returns:
             str: A formatted string prompt for the agent.
@@ -37,37 +40,44 @@ class ReportGenerator:
 
         # Add tables
         prompt += "### Tables ###\n"
-        for table in tables.tables:  # Iterate over tables in the TablesSchema object
-            prompt += f"**Table Name:** {table.table_name}\n"
-            prompt += f"Columns: {', '.join(table.columns)}\n"
+        for table_entry in tables:  # Iterate over the list of table tuples
+            table_name, table_columns, table_rows = table_entry  # Unpack tuple
+
+            prompt += f"**Table Name:** {table_name}\n"
+            prompt += f"Columns: {', '.join(table_columns)}\n"
             prompt += "Rows:\n"
-            for row in table.rows:
+            
+            # If table_rows is a JSON string, convert it to a Python list
+            if isinstance(table_rows, str):
+                try:
+                    table_rows = json.loads(table_rows)  # Parse JSON string into a list
+                except json.JSONDecodeError:
+                    prompt += "  - [Error parsing rows]\n"
+                    continue
+
+            # Add rows to the prompt
+            for row in table_rows:
                 prompt += f"  - {', '.join(row)}\n"
             prompt += "\n"
 
         return prompt
 
-    
 
-    def generate_report(self, analysis, tables, agent, schema):
+    def generate_report(self, analysis, agent, schema):
         logger.info("Starting to generate the report")
         logger.info("Prepare prompt for agent")
-        data = self.prepare_prompt_for_agent(analysis, tables)
+        data = self.prepare_prompt_for_agent(analysis['analysis'], analysis['tables'])
         logger.success("Prompt ready")
         logger.info("Prompting ChatGPT")
         prompt = agent.prompt(data)
         report_template = self.client.query_gpt(prompt, schema)
         logger.success("Response received from ChatGPT")
 
-        """ logger.info("Writing files")
-        with open(generated_report_path, 'w') as file:
-            json.dump(report_template.dict(), file, indent=4)
-        logger.success("Dump success!") """
-
         return report_template
 
 
-    def create_pdf_report(self, response: ReportResponse, analysis_generator, output_pdf="report.pdf"):
+    def create_pdf_report(self, response: ReportResponse, final_analysis, company_name):
+        document_date = datetime.now().strftime("%B %d, %Y")
         logger.info("Starting to generate the PDF file")
         logo_path = os.path.abspath("documents/Logo Final.jpg")
         with open(logo_path, "rb") as image_file:
@@ -128,7 +138,7 @@ class ReportGenerator:
             <img src="data:image/png;base64,{base64_logo_string}" alt="Company Logo" class="logo">
             <div class="document-info">
                 <p class="document-title">Equity Research Report</p>
-                <p class="document-date">Date: December 25, 2024</p>
+                <p class="document-date">{document_date}</p>
             </div>
         </header>
         <hr>
@@ -192,20 +202,37 @@ class ReportGenerator:
         logger.info(f"Mapping references")
         # Add References Section
         html_content += "<h1>References</h1><ul>"
-        for source in analysis_generator.sources:
-            if isinstance(source, frozenset):
-                # Convert frozenset back to dictionary
-                source = dict(source)
+        for source in final_analysis['sources']:
 
             # Extract document_name and date
-            document_name = source.get("document_name", "Unknown Document")
-            date = source.get("date", "N/A")
+            document_name = source[0]
+            date = source[1]
             html_content += f"<li>{document_name} - {date}</li>"
         html_content += "</ul>"
 
         logger.success(f"Success!")
         # Write HTML to PDF
+        output_pdf = f"{company_name} Equity Research Report - {document_date}"
         HTML(string=html_content).write_pdf(output_pdf)
+
+        # Upload PDF to S3
+        logger.info(f"Uploading {output_pdf} to S3")
+        pdf_key = f"reports/{os.path.basename(output_pdf)}"
+        with open(output_pdf, "rb") as pdf_file:
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key=pdf_key,
+                Body=pdf_file,
+                ContentType="application/pdf"
+            )
+
+        pdf_url = f"https://{self.bucket_name}.s3.amazonaws.com/{pdf_key}"
+        logger.success(f"PDF uploaded to S3: {pdf_url}")
+
+        # Cleanup local PDF file
+        if os.path.exists(output_pdf):
+            os.remove(output_pdf)
+            logger.info(f"Local PDF file {output_pdf} removed.")
 
         # Cleanup Graph Images
         for section in response.report_body:
@@ -214,4 +241,5 @@ class ReportGenerator:
                 if os.path.exists(graph_filename):
                     os.remove(graph_filename)
 
-        print(f"PDF report generated: {output_pdf}")
+        print(f"PDF report generated: {pdf_url}")
+        return pdf_url

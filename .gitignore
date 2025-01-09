@@ -1,13 +1,12 @@
 .env
-TSLA-Q1-2024-Update.pdf
-extracted_tables.json
-pdf_text.json
-extracted_text.json
 documents/article_embedings.json
 documents/table_embeddings.json
 documents/text_embeddings.json
 tester_dummy.py
 documents/final_analysis.json
 documents/generated_report.json
-report.pdf
 documents/prompt.json
+documents/extracted_tables.json
+documents/extracted_text.json
+documents/pdf_text.json
+documents/TSLA-Q1-2024-Update.pdf

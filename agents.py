@@ -14,41 +14,6 @@ class Agent:
         return [{"role": "system", "content": system_prompt}, {"role": "user", "content": input_prompt}]
 
 
-
-chunk_summary_agent = Agent(
-    name="Financial Report Summary Agent",
-    role="You are an expert financial analysis agent specializing in extracting key insights from financial reports to provide actionable summaries. Your role involves evaluating a company's financial performance, growth trends, risks, and their implications on the stock price.",
-    function="Your function is to analyze the provided chunk of text from a financial report and deliver a concise and contextually relevant one-paragraph summary. The summary should focus on the company's financial performance, market trends, growth opportunities, risks, and their potential impact on the stock price. Ensure the summary aligns with the overarching goal of supporting equity analysis, avoiding any unrelated or superficial details. The summary should be maximum {summary_token_target} tokens"
-)
-
-tables_extraction_agent = Agent(
-    name="PDF Tables Extraction Agent",
-    role="You are an expert in extracting all tables from PDFs while ignoring narrative text.",
-    function="""Your function is to extract all tables from the provided PDF content while ignoring all narrative text.
-    
-    ### Instructions:
-    1. Extract **all tables**, ensuring the structure is preserved. Include:
-      - **Table Name:** A meaningful title if available, otherwise a placeholder like 'Table {number}'.
-      - **Columns:** Column headers as they appear in the table.
-      - **Rows:** Each row of the table as a list of strings.
-    2. **Take your time** to really inspect the text and make sure you extract all tables.
-    2. **Double check** your work afterwards to ensure you captured all tables
-
-    Ensure that no tabular information is lost, and tables are extracted clearly and accurately."""
-)
-
-text_extraction_agent = Agent(
-    name="Text Extraction Agent",
-    role="You are an expert text extraction agent specializing in capturing all non-tabular text from PDFs without performing any analysis or modifications.",
-    function="""Your function is to extract all text that does not belong to a table from the provided raw PDF content. 
-
-    ### Instructions:
-    - Extract **all non-tabular text exactly as it appears** in the input, preserving formatting and structure.
-    - Do not include any tabular data in this extraction.
-    - Do not analyze, interpret, or summarize the text."""
-)
-
-
 # Analysis agents:
 profitability_agent = Agent(
     name="Profitability Metrics Agent",
@@ -185,11 +150,11 @@ equity_report_integration_agent = Agent(
            and graph, ensuring smooth transitions and logical flow.
 
         The final report body should:
-        - Dynamically integrate tables and graphs into the analyses.
-        - Ensure tables and graphs are seamlessly referenced and explained within the text.
+        - **Include all 10 analyses**, where 3 of them also have tables, and 1 of them will have a graph to accompany it
+        - If you decide to incorporate a table or a graph with an analysis, you must dynamically integrate them without summarizing or shortening the analysis!!
+        - If an analysis is not matched with a graph or a table, you **must** include the analysis exactly as it was in the input prompt, alongside the ones that are incorporated with a table or graph.
         - Produce visually organized and professional content ready for use in an equity research report.
-        - You **must not** summarize the analyses to incorporate a seemless reference to the tables and graphs if necessary.
-        - If an analysis is not matched with a graph or a table, you **must** include the analysis exactly as it is in your response, alongside the ones that are incorporated with a table or graph.
+        - Remember, each analysis in the input prompt is about 150 words long. Each analysis in your response should also be the same length as the original analysis in the input.
 
         Ensure all graph metadata includes:
         - x_axis labels (list of strings).
