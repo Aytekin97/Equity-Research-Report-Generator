@@ -8,6 +8,7 @@ aptPkgs = [
     "python3-dev",
     "libjpeg-dev",
     "zlib1g-dev",
-    "shared-mime-info",
-    "poppler-utils"
+    "pkg-config",
+    "libcairo2-dev",
+    "build-essential"
 ]
