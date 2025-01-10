@@ -13,5 +13,7 @@ aptPkgs = [
     "pkg-config",
     "build-essential",
     "shared-mime-info",
-    "poppler-utils"
+    "poppler-utils",
+    "libglib2.0-dev",
+    "libgirepository1.0-dev"
 ]
