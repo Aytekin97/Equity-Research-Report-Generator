@@ -13,7 +13,5 @@ aptPkgs = [
     "pkg-config",
     "build-essential",
     "shared-mime-info",
-    "poppler-utils",
-    "libgobject-2.0-0",
-    "libgobject2.0-dev"
+    "poppler-utils"
 ]
