@@ -76,7 +76,7 @@ class ReportGenerator:
         return report_template
 
 
-    def create_pdf_report(self, response: ReportResponse, final_analysis, company_name):
+    def create_pdf_report(self, response: ReportResponse, final_analysis, company_name, s3_client):
         document_date = datetime.now().strftime("%B %d, %Y")
         logger.info("Starting to generate the PDF file")
         logo_path = os.path.abspath("documents/Logo Final.jpg")
@@ -226,7 +226,11 @@ class ReportGenerator:
                 ContentType="application/pdf"
             )
 
-        pdf_url = f"https://{self.bucket_name}.s3.amazonaws.com/{pdf_key}"
+        pdf_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': self.bucket_name, 'Key': pdf_key},
+            ExpiresIn=3600
+        )
         logger.success(f"PDF uploaded to S3: {pdf_url}")
 
         # Cleanup local PDF file

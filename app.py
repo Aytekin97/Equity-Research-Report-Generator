@@ -57,7 +57,7 @@ def generate_analysis(company_name: str = Query(...)):
 
         # Generate report and create PDF
         report_response = report_generator.generate_report(final_analysis, equity_report_integration_agent, ReportResponse)
-        pdf_url = report_generator.create_pdf_report(report_response, final_analysis, company_name)
+        pdf_url = report_generator.create_pdf_report(report_response, final_analysis, company_name, s3_client)
 
         # Return the PDF URL
         return JSONResponse(
