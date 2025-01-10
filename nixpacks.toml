@@ -6,6 +6,8 @@ aptPkgs = [
     "libpangocairo-1.0-0",
     "libgdk-pixbuf2.0-0",
     "libgdk-pixbuf2.0-dev",
+    "libglib2.0-0",
+    "libglib2.0-dev",
     "libffi-dev",
     "python3-dev",
     "libjpeg-dev",
@@ -14,8 +16,7 @@ aptPkgs = [
     "build-essential",
     "shared-mime-info",
     "poppler-utils",
-    "libglib2.0-0",
-    "libglib2.0-dev",
     "gobject-introspection",
-    "gir1.2-pango-1.0"
+    "gir1.2-pango-1.0",
+    "gir1.2-gdkpixbuf-2.0"
 ]
