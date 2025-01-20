@@ -50,7 +50,7 @@ class Analyzer:
 
                     text_results = self.text_index.query(
                         vector=query_embeddings,
-                        top_k=5,
+                        top_k=15,
                         filter={"company_name": {"$eq": company_name}},
                         include_metadata=True
                     )["matches"]
